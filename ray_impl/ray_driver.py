@@ -28,6 +28,8 @@ from typing import Any
 
 import ray
 
+from sqlalchemy import delete
+
 from common.config import RAY_ADDRESS, RAY_NUM_CPUS, TESTCASES_PER_PROBLEM
 from common.database import AsyncSessionLocal, create_tables
 from common.models import ExperimentSubmission
@@ -67,6 +69,11 @@ async def _create_submission_records(
     num_workers: int,
 ) -> None:
     await create_tables()
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            delete(ExperimentSubmission).where(ExperimentSubmission.run_id == run_id)
+        )
+        await session.commit()
     async with AsyncSessionLocal() as session:
         for sub in submissions:
             record = ExperimentSubmission(

@@ -11,8 +11,6 @@ import uuid
 from dataclasses import dataclass
 from typing import NamedTuple
 
-# Fixed namespace so submission UUIDs are deterministic given the same index
-_SUB_NS = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 
 from common.config import PROBLEM_POOL_SIZE, TESTCASES_PER_PROBLEM
 
@@ -191,7 +189,7 @@ def generate_submissions(
         problem = rng.choice(problem_pool)
         submissions.append(
             Submission(
-                submission_id=str(uuid.uuid5(_SUB_NS, f"sub-{i:06d}")),
+                submission_id=str(uuid.uuid4()),
                 problem=problem,
             )
         )

@@ -27,7 +27,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -39,6 +39,11 @@ from common.workload import build_problem_pool, generate_submissions
 
 async def _create_records(submissions, run_id: str, num_workers: int) -> None:
     await create_tables()
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            delete(ExperimentSubmission).where(ExperimentSubmission.run_id == run_id)
+        )
+        await session.commit()
     async with AsyncSessionLocal() as session:
         for sub in submissions:
             record = ExperimentSubmission(

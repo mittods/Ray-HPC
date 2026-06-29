@@ -7,10 +7,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /experiment
 
 COPY ray_impl/requirements.txt /experiment/ray_impl/requirements.txt
-RUN pip install --no-cache-dir -r ray_impl/requirements.txt
+COPY celery_impl/requirements.txt /experiment/celery_impl/requirements.txt
+RUN pip install --no-cache-dir \
+    -r ray_impl/requirements.txt \
+    -r celery_impl/requirements.txt
 
 COPY common/ /experiment/common/
 COPY ray_impl/ /experiment/ray_impl/
+COPY celery_impl/ /experiment/celery_impl/
 COPY benchmarks/ /experiment/benchmarks/
 
 ENV PYTHONPATH=/experiment
