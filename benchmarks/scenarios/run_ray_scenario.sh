@@ -14,10 +14,17 @@ SUBMISSIONS="${3}"
 SEED="${4:-42}"
 RESULTS_DIR="${5:-/results}"
 
+# Support both Docker Compose V2 plugin and V1 standalone
+if docker compose version &>/dev/null 2>&1; then
+    DC="docker compose"
+else
+    DC="docker-compose"
+fi
+
 echo "[ray] Starting scenario: ${RUN_ID}"
 
 # Start Ray head node
-docker compose \
+$DC \
     -f docker-compose.yml \
     -f docker-compose.ray.yml \
     up -d ray-head
@@ -26,7 +33,7 @@ echo "[ray] Waiting for Ray head to initialize..."
 sleep 10
 
 # Run the benchmark driver with the specified CPU budget
-docker compose \
+$DC \
     -f docker-compose.yml \
     -f docker-compose.ray.yml \
     run --rm \
@@ -41,7 +48,7 @@ docker compose \
         --csv "/results/results.csv"
 
 # Tear down Ray head (keep infrastructure)
-docker compose \
+$DC \
     -f docker-compose.yml \
     -f docker-compose.ray.yml \
     stop ray-head

@@ -18,10 +18,13 @@ RUN_ID="${1:-unknown}"
 OUTPUT_DIR="${2:-/results}"
 INTERVAL="${3:-1.0}"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EXPERIMENT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
 mkdir -p "${OUTPUT_DIR}"
 
-PYTHONPATH="${PYTHONPATH:-/experiment}" \
-python /experiment/benchmarks/collect_metrics.py \
+PYTHONPATH="${EXPERIMENT_DIR}" \
+python "${EXPERIMENT_DIR}/benchmarks/collect_metrics.py" \
     --run-id "${RUN_ID}" \
     --interval "${INTERVAL}" \
     --output "${OUTPUT_DIR}/sys_metrics_${RUN_ID}.csv" &

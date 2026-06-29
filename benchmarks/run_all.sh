@@ -27,6 +27,13 @@ RESULTS_DIR="${RESULTS_DIR:-./results}"
 LOG_DIR="${RESULTS_DIR}/logs"
 mkdir -p "${RESULTS_DIR}" "${LOG_DIR}"
 
+# Support both Docker Compose V2 plugin and V1 standalone
+if docker compose version &>/dev/null 2>&1; then
+    DC="docker compose"
+else
+    DC="docker-compose"
+fi
+
 WORKERS_LIST="${WORKERS_LIST:-1 2 4 8 16 32}"
 SUBMISSIONS_LIST="${SUBMISSIONS_LIST:-100 500}"
 SEED=42
@@ -96,7 +103,7 @@ echo ""
 echo "[run_all] All scenarios complete."
 echo "[run_all] Generating figures..."
 
-docker compose run --rm bench \
+$DC run --rm bench \
     python benchmarks/plot_results.py \
     --results-csv "/results/results.csv" \
     --sys-csv "/results/sys_metrics_*.csv" \
