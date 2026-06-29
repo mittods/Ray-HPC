@@ -23,6 +23,7 @@ celery_app.conf.update(
         "celery_impl.judge_task.*": {"queue": "exp-judge"},
     },
     result_expires=3600,
+    # Explicit imports so workers register tasks on startup.
+    # autodiscover_tasks only finds celery_impl/tasks.py which does not exist.
+    imports=["celery_impl.compile_task", "celery_impl.judge_task"],
 )
-
-celery_app.autodiscover_tasks(["celery_impl"])
