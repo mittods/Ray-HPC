@@ -1,0 +1,81 @@
+# Celery worker overlay – compose on top of docker-compose.yml.
+#
+# Usage (N workers per queue):
+#   docker compose \
+#       -f docker-compose.yml \
+#       -f docker-compose.celery.yml \
+#       up -d \
+#       --scale celery-compile-worker=4 \
+#       --scale celery-judge-worker=4
+#
+# The --scale flag is the primary mechanism for the scalability scenarios.
+# Each worker process handles tasks concurrently equal to its concurrency
+# (-c) setting. We use -c 1 so that --scale directly maps to parallelism.
+
+services:
+
+  celery-compile-worker:
+    image: ${CELERY_IMAGE:-ghcr.io/mittods/dijudge-exp-celery:latest}
+    build:
+      context: .
+      dockerfile: celery_impl/Dockerfile
+    env_file:
+      - .env
+    environment:
+      EXP_DATABASE_URL: postgresql+asyncpg://dijudge:dijudge@exp-postgres:5432/dijudge_exp
+      EXP_REDIS_URL: redis://exp-redis:6379/0
+      ARTIFACT_ROOT: /artifacts
+    command:
+      - celery
+      - -A
+      - celery_impl.celery_app
+      - worker
+      - --queues=exp-compile
+      - --concurrency=1          # 1 task per worker process; scale via --scale
+      - --loglevel=warning
+      - --without-heartbeat      # reduces Redis chatter during benchmarks
+      - --without-gossip
+      - --without-mingle
+    volumes:
+      - exp-artifacts:/artifacts
+    depends_on:
+      exp-postgres:
+        condition: service_healthy
+      exp-redis:
+        condition: service_healthy
+    networks:
+      - exp-network
+    restart: on-failure
+
+  celery-judge-worker:
+    image: ${CELERY_IMAGE:-ghcr.io/mittods/dijudge-exp-celery:latest}
+    build:
+      context: .
+      dockerfile: celery_impl/Dockerfile
+    env_file:
+      - .env
+    environment:
+      EXP_DATABASE_URL: postgresql+asyncpg://dijudge:dijudge@exp-postgres:5432/dijudge_exp
+      EXP_REDIS_URL: redis://exp-redis:6379/0
+      ARTIFACT_ROOT: /artifacts
+    command:
+      - celery
+      - -A
+      - celery_impl.celery_app
+      - worker
+      - --queues=exp-judge
+      - --concurrency=1
+      - --loglevel=warning
+      - --without-heartbeat
+      - --without-gossip
+      - --without-mingle
+    volumes:
+      - exp-artifacts:/artifacts
+    depends_on:
+      exp-postgres:
+        condition: service_healthy
+      exp-redis:
+        condition: service_healthy
+    networks:
+      - exp-network
+    restart: on-failure

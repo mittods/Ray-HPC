@@ -1,0 +1,62 @@
+# Ray cluster overlay – compose on top of docker-compose.yml.
+#
+# Usage (single-node, N CPU slots via driver env var):
+#   docker compose \
+#       -f docker-compose.yml \
+#       -f docker-compose.ray.yml \
+#       up -d ray-head
+#
+#   docker compose -f docker-compose.yml -f docker-compose.ray.yml \
+#       run --rm -e RAY_NUM_CPUS=8 bench \
+#       python benchmarks/run_ray_bench.py --workers 8 ...
+#
+# For multi-node experiments (≥16 workers) additional ray-worker services
+# can be added here. On the Threadripper 5975WX (32 cores, 64 threads)
+# a single-container Ray cluster is sufficient for all planned scenarios.
+#
+# NOTE: Ray worker tasks run inside the head node container for the
+# single-node configuration. For real distributed experiments, add
+# ray-worker services that join the head with `ray start --address`.
+
+services:
+
+  ray-head:
+    image: ${RAY_IMAGE:-ghcr.io/mittods/dijudge-exp-ray:latest}
+    build:
+      context: .
+      dockerfile: ray_impl/Dockerfile
+    container_name: exp-ray-head
+    env_file:
+      - .env
+    environment:
+      EXP_DATABASE_URL: postgresql+asyncpg://dijudge:dijudge@exp-postgres:5432/dijudge_exp
+      EXP_REDIS_URL: redis://exp-redis:6379/0
+      ARTIFACT_ROOT: /artifacts
+      RAY_ADDRESS: ""       # empty = local mode inside driver
+    # The head node exposes the Ray dashboard and the GCS server
+    ports:
+      - "8265:8265"   # Ray dashboard
+      - "6380:6380"   # Ray GCS (not conflicting with Redis on host)
+    command:
+      - ray
+      - start
+      - --head
+      - --port=6379
+      - --dashboard-host=0.0.0.0
+      - --dashboard-port=8265
+      - --block
+    volumes:
+      - exp-artifacts:/artifacts
+      - exp-results:/results
+    depends_on:
+      exp-postgres:
+        condition: service_healthy
+    networks:
+      - exp-network
+    healthcheck:
+      test: ["CMD-SHELL", "ray status 2>/dev/null | grep -q 'Ray runtime started' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 15s
+    shm_size: '4gb'    # Ray uses shared memory for the object store

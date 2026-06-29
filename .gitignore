@@ -1,0 +1,33 @@
+# Environment — nunca commitear .env con credenciales reales
+.env
+
+# Resultados generados (CSV, JSON, figuras)
+results/*
+!results/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Docker volumes y data
+data/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+logs/

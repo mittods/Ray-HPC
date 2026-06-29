@@ -1,0 +1,57 @@
+name: Build & Publish Docker Images
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: ${{ github.repository_owner }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── exp-celery ─────────────────────────────────────────────────────────
+      - name: Build and push exp-celery
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: celery_impl/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/dijudge-exp-celery:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/dijudge-exp-celery:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── exp-ray ────────────────────────────────────────────────────────────
+      - name: Build and push exp-ray
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ray_impl/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/dijudge-exp-ray:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/dijudge-exp-ray:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

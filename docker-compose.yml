@@ -1,0 +1,81 @@
+# Base infrastructure shared by both Celery and Ray experiments.
+# Start this first before any framework-specific overlay.
+#
+# Usage:
+#   docker compose -f docker-compose.yml up -d
+#
+# Includes:
+#   - PostgreSQL 17  (experiment DB – port 5433 to avoid conflict with prod)
+#   - Redis 7        (Celery broker – port 6380)
+#   - bench          (benchmark driver container, run-only)
+
+services:
+
+  exp-postgres:
+    image: postgres:17
+    container_name: exp-postgres
+    environment:
+      POSTGRES_USER: dijudge
+      POSTGRES_PASSWORD: dijudge
+      POSTGRES_DB: dijudge_exp
+    ports:
+      - "5433:5432"
+    volumes:
+      - exp-postgres-data:/var/lib/postgresql/data
+      - ./init/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+    networks:
+      - exp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dijudge -d dijudge_exp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  exp-redis:
+    image: redis:7-alpine
+    container_name: exp-redis
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    ports:
+      - "6380:6379"
+    networks:
+      - exp-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+
+  bench:
+    image: ${RAY_IMAGE:-ghcr.io/mittods/dijudge-exp-ray:latest}
+    build:
+      context: .
+      dockerfile: ray_impl/Dockerfile   # reuse; override CMD at run-time
+    container_name: exp-bench
+    profiles:
+      - bench  # only started explicitly with --profile bench or docker compose run
+    env_file:
+      - .env
+    environment:
+      EXP_DATABASE_URL: postgresql+asyncpg://dijudge:dijudge@exp-postgres:5432/dijudge_exp
+      EXP_REDIS_URL: redis://exp-redis:6379/0
+      RESULTS_DIR: /results
+      ARTIFACT_ROOT: /artifacts
+    volumes:
+      - exp-results:/results
+      - exp-artifacts:/artifacts
+    depends_on:
+      exp-postgres:
+        condition: service_healthy
+      exp-redis:
+        condition: service_healthy
+    networks:
+      - exp-network
+
+volumes:
+  exp-postgres-data:
+  exp-results:
+  exp-artifacts:
+
+networks:
+  exp-network:
+    driver: bridge
