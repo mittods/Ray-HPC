@@ -23,7 +23,12 @@ celery_app.conf.update(
         "celery_impl.judge_task.*": {"queue": "exp-judge"},
     },
     result_expires=3600,
-    # Explicit imports so workers register tasks on startup.
-    # autodiscover_tasks only finds celery_impl/tasks.py which does not exist.
-    imports=["celery_impl.compile_task", "celery_impl.judge_task"],
 )
+
+# Direct imports register the tasks with this app before the worker boots.
+# conf.update(imports=[...]) is unreliable in Celery 5.x — the worker reads
+# conf before conf.update() runs, so those modules are never imported.
+# Placing imports HERE (after celery_app is defined) avoids the circular
+# import: compile_task.py imports celery_app, which is already defined above.
+import celery_impl.compile_task  # noqa: F401, E402
+import celery_impl.judge_task    # noqa: F401, E402
