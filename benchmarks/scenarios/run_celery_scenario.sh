@@ -25,11 +25,13 @@ echo "[celery] Starting scenario: ${RUN_ID}"
 echo "[celery] Purging broker queues..."
 docker exec exp-redis redis-cli DEL exp-compile exp-judge > /dev/null 2>&1 || true
 
-# Start Celery workers with the requested concurrency
+# Start Celery workers with the requested concurrency.
+# --force-recreate ensures workers always use the current image, not a stale container.
 $DC \
     -f docker-compose.yml \
     -f docker-compose.celery.yml \
     up -d \
+    --force-recreate \
     --scale celery-compile-worker="${WORKERS}" \
     --scale celery-judge-worker="${WORKERS}"
 

@@ -23,11 +23,11 @@ fi
 
 echo "[ray] Starting scenario: ${RUN_ID}"
 
-# Start Ray head node
+# Start Ray head node. --force-recreate ensures the latest image is used.
 $DC \
     -f docker-compose.yml \
     -f docker-compose.ray.yml \
-    up -d ray-head
+    up -d --force-recreate ray-head
 
 echo "[ray] Waiting for Ray head to initialize..."
 sleep 10
