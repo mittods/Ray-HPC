@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r ray_impl/requirements.txt
 
 COPY common/ /experiment/common/
 COPY ray_impl/ /experiment/ray_impl/
+COPY benchmarks/ /experiment/benchmarks/
 
 ENV PYTHONPATH=/experiment
 ENV PYTHONUNBUFFERED=1

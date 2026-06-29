@@ -33,10 +33,9 @@ services:
       EXP_REDIS_URL: redis://exp-redis:6379/0
       ARTIFACT_ROOT: /artifacts
       RAY_ADDRESS: ""       # empty = local mode inside driver
-    # The head node exposes the Ray dashboard and the GCS server
+    # The head node exposes only the Ray dashboard; GCS (6379) is internal to exp-network
     ports:
       - "8265:8265"   # Ray dashboard
-      - "6380:6380"   # Ray GCS (not conflicting with Redis on host)
     command:
       - ray
       - start
