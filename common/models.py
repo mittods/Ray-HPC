@@ -3,7 +3,6 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Integer, DateTime, func
-from sqlalchemy.dialects.postgresql import UUID
 from common.database import Base
 
 
@@ -19,7 +18,7 @@ class ExperimentSubmission(Base):
     """
     __tablename__ = "experiment_submissions"
 
-    id = Column(UUID(as_uuid=False), primary_key=True, default=_gen_uuid)
+    id = Column(String(36), primary_key=True, default=_gen_uuid)
     run_id = Column(String(100), nullable=False, index=True)
     framework = Column(String(20), nullable=False)       # 'celery' | 'ray'
     num_workers = Column(Integer, nullable=False)
