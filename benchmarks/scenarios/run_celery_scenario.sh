@@ -21,6 +21,10 @@ fi
 
 echo "[celery] Starting scenario: ${RUN_ID}"
 
+# Purge broker queues so leftover tasks from previous runs don't contaminate results
+echo "[celery] Purging broker queues..."
+docker exec exp-redis redis-cli DEL exp-compile exp-judge > /dev/null 2>&1 || true
+
 # Start Celery workers with the requested concurrency
 $DC \
     -f docker-compose.yml \

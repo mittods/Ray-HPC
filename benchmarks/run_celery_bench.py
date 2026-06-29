@@ -57,8 +57,11 @@ async def _create_records(submissions, run_id: str, num_workers: int) -> None:
         await session.commit()
 
 
-async def _poll_completion(run_id: str, n_total: int, poll_interval: float = 1.0) -> None:
+async def _poll_completion(
+    run_id: str, n_total: int, poll_interval: float = 1.0, timeout_s: float = 1800.0
+) -> None:
     print(f"[Celery] Polling for completion of {n_total} submissions (run_id={run_id})...")
+    elapsed = 0.0
     while True:
         async with AsyncSessionLocal() as session:
             result = await session.execute(
@@ -71,8 +74,12 @@ async def _poll_completion(run_id: str, n_total: int, poll_interval: float = 1.0
         if done_count >= n_total:
             print(f"[Celery] All {n_total} submissions done.")
             break
-        print(f"[Celery] Progress: {done_count}/{n_total}")
+        if elapsed >= timeout_s:
+            print(f"[Celery] TIMEOUT after {timeout_s}s: {done_count}/{n_total} done. Aborting.")
+            break
+        print(f"[Celery] Progress: {done_count}/{n_total} (elapsed: {elapsed:.0f}s)")
         await asyncio.sleep(poll_interval)
+        elapsed += poll_interval
 
 
 async def _collect_metrics(run_id: str) -> dict:
