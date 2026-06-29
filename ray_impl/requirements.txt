@@ -1,4 +1,4 @@
-ray[default]==2.10.0
+ray[default]==2.44.1
 SQLAlchemy==2.0.46
 asyncpg==0.29.0
 docker==6.1.0
